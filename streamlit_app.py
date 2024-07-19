@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 
 # Set page config
@@ -115,7 +116,8 @@ st.sidebar.write(f"Number of colleges after filtering: {len(filtered_df)}")
 # Toggle for map visibility
 show_map = st.checkbox('Show Map', value=True)
 
-if show_map and not filtered_df.empty:
+
+if show_map:
     # Map visualization
     st.subheader('College Locations')
 
@@ -125,38 +127,52 @@ if show_map and not filtered_df.empty:
     # Filter out rows with missing lat/long
     map_df = filtered_df.dropna(subset=['Latitude', 'Longitude'])
 
-    fig = px.scatter_mapbox(map_df, 
-                            lat='Latitude', 
-                            lon='Longitude', 
-                            hover_name='Name', 
-                            color='Institution Type',
-                            color_discrete_map=color_map,
-                            zoom=3, 
-                            height=600)
+    # Create the figure
+    fig = go.Figure()
 
-    fig.update_traces(marker=dict(size=10))  # Increase marker size
+    # Add traces for each institution type
+    for inst_type in map_df['Institution Type'].unique():
+        df_type = map_df[map_df['Institution Type'] == inst_type]
+        
+        fig.add_trace(go.Scattermapbox(
+            lat=df_type['Latitude'],
+            lon=df_type['Longitude'],
+            mode='markers',
+            marker=go.scattermapbox.Marker(
+                size=10,
+                color=color_map[inst_type],
+            ),
+            text=df_type['Name'],
+            hoverinfo='text',
+            customdata=df_type[['City', 'State', 'Institution Type', 'Admission Rate', 
+                                'Earnings to Price Ratio', 'Graduation Rate', 'Four Year Cost', 'Yield Rate']],
+            hovertemplate=(
+                "<b>%{text}</b><br>" +
+                "%{customdata[0]}, %{customdata[1]}<br>" +
+                "%{customdata[2]}<br>" +
+                "Admission Rate: %{customdata[3]:.0%}<br>" +
+                "Earnings to Price Ratio: %{customdata[4]:.1f}<br>" +
+                "Graduation Rate: %{customdata[5]:.0%}<br>" +
+                "Four Year Cost: $%{customdata[6]:,.0f}<br>" +
+                "Yield Rate: %{customdata[7]:.0%}<br>" +
+                "<extra></extra>"
+            )
+        ))
 
-    fig.update_layout(mapbox_style="open-street-map")
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-
-    # Custom hover template
-    hovertemplate = "<b>%{hovertext}</b><br>" + \
-                    "%{customdata[0]}, %{customdata[1]}<br>" + \
-                    "%{customdata[2]}<br>" + \
-                    "Admission Rate: %{customdata[3]:.0%}<br>" + \
-                    "Earnings to Price Ratio: %{customdata[4]:.1f}<br>" + \
-                    "Graduation Rate: %{customdata[5]:.0%}<br>" + \
-                    "Four Year Cost: $%{customdata[6]:,.0f}<br>" + \
-                    "Yield Rate: %{customdata[7]:.0%}<br>" + \
-                    "<extra></extra>"
-
-    fig.update_traces(
-        hovertemplate=hovertemplate,
-        customdata=map_df[['City', 'State', 'Institution Type', 'Admission Rate', 
-                           'Earnings to Price Ratio', 'Graduation Rate', 'Four Year Cost', 'Yield Rate']]
+    # Update the layout
+    fig.update_layout(
+        mapbox_style="open-street-map",
+        mapbox=dict(
+            center=dict(lat=map_df['Latitude'].mean(), lon=map_df['Longitude'].mean()),
+            zoom=3
+        ),
+        showlegend=False,
+        height=600,
+        margin={"r":0,"t":0,"l":0,"b":0}
     )
 
     st.plotly_chart(fig, use_container_width=True)
+
 elif show_map:
     st.warning("No colleges to display on the map based on current filters.")
 
