@@ -8,7 +8,7 @@ import numpy as np
 st.set_page_config(page_title="Quiet Prestige Explorer", layout="wide")
 
 @st.cache_data
-def load_data():
+def load_data(): 
     df = pd.read_csv('gems_with_coordinates.csv')
     
     # Function to convert percentage strings to floats
@@ -72,8 +72,8 @@ except Exception as e:
     st.stop()
 
 # Main layout
-st.title('Quiet Prestige Explorer')
-st.write('Set different filters to explore potential colleges for list')
+st.title('Quiet Prestige Explorer v 2')
+st.write('Set different filters to explore potential colleges for list. Staging test')
 
 # Sidebar for filters
 st.sidebar.header('Filters')
